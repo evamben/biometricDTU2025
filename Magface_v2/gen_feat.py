@@ -95,11 +95,13 @@ def main_worker(ngpus_per_node, args):
 
     cprint('=> building the dataloader ...', 'green')
     trans = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((112, 112)),
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0., 0., 0.],
-            std=[1., 1., 1.]),
+        transforms.Normalize(mean=[0., 0., 0.], std=[1., 1., 1.])
     ])
+
+
     inf_dataset = ImgInfLoader(
         ann_file=args.inf_list,
         transform=trans
