@@ -1,0 +1,11 @@
+python train.py \
+  --training_csv train.csv \
+  --test_csv test.csv \
+  --prefix custom_note \
+  --model_name resnet50d \
+  --lr [0.001,0.01] \
+  --input_shape "(224,224)" \
+  --max_epoch 50 \
+  --batch_size 128 \
+  --pretrain True \
+  --num_classes 2
