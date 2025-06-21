@@ -1,35 +1,41 @@
-from PIL import Image
-
-
-print(img.size)
 import os
-from PIL import Image
+import glob
+import csv
 
-def validar_imagenes(root_dir, expected_size=(256, 256), expected_mode='RGB'):
-    errores = []
-    
-    for carpeta in os.listdir(root_dir):
-        carpeta_path = os.path.join(root_dir, carpeta)
-        if not os.path.isdir(carpeta_path):
-            continue
+def casia_to_csv():
+    data_root = 'datasets/Casia-Fasd'
+    output_dir = './casia_csvs/'
+    os.makedirs(output_dir, exist_ok=True)
 
-        for archivo in os.listdir(carpeta_path):
-            if archivo.lower().endswith(('.jpg', '.jpeg', '.png')):
-                ruta_img = os.path.join(carpeta_path, archivo)
-                try:
-                    with Image.open(ruta_img) as img:
-                        if img.size != expected_size or img.mode != expected_mode:
-                            errores.append((ruta_img, img.size, img.mode))
-                except Exception as e:
-                    errores.append((ruta_img, 'Error al abrir', str(e)))
+    splits = {
+        'train': os.path.join(data_root, 'train_img', 'train_img', 'color'),
+        'test': os.path.join(data_root, 'test_img', 'test_img', 'color')
+    }
 
-    if errores:
-        print("🔴 Se encontraron imágenes que no cumplen con el formato esperado:")
-        for ruta, size, mode in errores:
-            print(f"- {ruta} → Tamaño: {size}, Modo: {mode}")
-    else:
-        print("✅ Todas las imágenes tienen tamaño 256x256 y son RGB.")
+    for split_name, folder in splits.items():
+        path_list = glob.glob(os.path.join(folder, '*.jpg'))
+        path_list.sort()
 
-# 👉 Cambia esta ruta por la tuya
-ruta_dataset = 'datasets/Casia-Fasd/train_img/train_img/color'
-validar_imagenes(ruta_dataset)
+        csv_path = os.path.join(output_dir, f'{split_name}.csv')
+
+        with open(csv_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            # Cabecera (opcional)
+            writer.writerow(['photo_path', 'photo_label'])
+
+            for path in path_list:
+                filename = os.path.basename(path).lower()
+                if '_real.jpg' in filename:
+                    label = 1
+                elif '_fake.jpg' in filename:
+                    label = 0
+                else:
+                    print(f"[!] Nombre ambiguo (sin '_real' o '_fake'): {filename}")
+                    continue
+
+                writer.writerow([path, label])
+
+        print(f"[✓] Archivo CSV generado: {csv_path}")
+
+if __name__ == "__main__":
+    casia_to_csv()
