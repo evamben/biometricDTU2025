@@ -1,1 +1,0 @@
-python gen_feat.py --inf_list preprocessing_v1/Casia_Fasd/img.list --feat_list preprocessing_v1/Casia_Fasd/feat.list --resume Magface_v2/models/magface_iresnet18_casia_dp.pth
