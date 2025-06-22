@@ -38,4 +38,3 @@ if missing:
     print("\nEjemplos de imágenes que faltan:")
     print(len(missing))
 
-python train.py   --train_dir Magface_v2/datasets/Casia-Fasd/train_img/train_img/color  --val_dir Magface_v2/datasets/Casia-Fasd/val_img/color   --prefix casia_v1   --pretrained   --max_epoch 20   --batch_size 32   --ops   --norm
