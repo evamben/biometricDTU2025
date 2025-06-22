@@ -3,7 +3,7 @@ import sys
 sys.path.append("..")
 sys.path.append("../../")
 
-from utils import utils
+import utils
 from network_inf import builder_inf
 import cv2
 from termcolor import cprint
