@@ -1,1 +1,7 @@
-
+LCC_FASD/LCC_FASD_development/real
+LCC_FASD/LCC_FASD_development/spoof
+LCC_FASD/LCC_FASD_evaluation/real
+LCC_FASD/LCC_FASD_evaluation/spoof
+LCC_FASD/LCC_FASD_training/real
+LCC_FASD/LCC_FASD_training/spoof
+Magface_v2/datasets/Casia-Fasd/
