@@ -72,5 +72,9 @@ class MixStyle(nn.Module):
         mu_mix = mu * lmda + mu2 * (1 - lmda)
         sig_mix = sig * lmda + sig2 * (1 - lmda)
 
+<<<<<<< HEAD
         return x_normed*sig_mix + mu_mix
     
+=======
+        return x_normed * sig_mix + mu_mix
+>>>>>>> main_2/main
