@@ -24,6 +24,7 @@ import pprint
 import os
 
 # parse the args
+#hello
 cprint('=> parse the args ...', 'green')
 parser = argparse.ArgumentParser(description='Trainer for posenet')
 parser.add_argument('--arch', default='iresnet100', type=str,
