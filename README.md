@@ -31,7 +31,7 @@ BIOMETRICDTU2025/
 │   ├── confusion_matrices/           # Confusion matrix plots
 │   ├── datasets/                     # Custom PyTorch dataset loading logic
 │   ├── logs/                         # Training and evaluation logs
-│   ├── metrics/                      # Implementation of evaluation metrics (HTER, AUC, BPCER, etc.)
+│   ├── metrics/                      # Implementation of evaluation metrics 
 │   ├── quality_split_images_casia_train/     # CASIA dataset split into quality tiers (image folders)
 │   ├── quality_splits_LCC_traaining/         # LCC dataset splits into quality tiers (text file lists)
 │   ├── results/                      # Output: result CSVs, misclassified images, tables
@@ -40,7 +40,7 @@ BIOMETRICDTU2025/
 │   ├── eval.py                       # Evaluation pipeline
 │   ├── eval_only_runner.py           # Evaluation runner without training
 │   ├── folder_high_quality_best_model.pth    # Example pre-trained model checkpoint
-│   ├── model.py                      # PAD model (e.g., ResNet-18 based)
+│   ├── model.py                      # PAD model
 │   ├── script-runner.py              # Main script for cross-domain training and evaluation
 │   ├── train.py                      # Training script
 │   └── utils.py                      # General utility functions
@@ -61,7 +61,7 @@ BIOMETRICDTU2025/
 │   ├── img_lcc_fix.py                # Patch or clean file paths/labels in LCC
 │   ├── network_inf.py                # Model inference wrapper using MagFace
 │   └── utils.py                      # Helpers for quality scoring, feature handling
-├── scripts/                          # Additional or legacy scripts
+├── scripts/                          # Additional scripts
 ├── .gitattributes
 ├── .gitignore
 └── README.md                         # Project documentation
