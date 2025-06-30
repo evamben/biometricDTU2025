@@ -1,6 +1,3 @@
-Por supuesto, aquí tienes el `README.md` en **inglés**, sin emojis ni símbolos decorativos:
-
----
 
 # Exploring Sample Quality for Face Presentation Attack Detection (PAD)
 
