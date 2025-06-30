@@ -11,4 +11,4 @@ fixed_lines = [line.replace("\\", "/") for line in lines]
 with open("Magface_v2/preprocessing_v1/Casia_Fasd/img_fixed.list", "w") as f:
     f.writelines(fixed_lines)
 
-print("✅ Fixed list saved as dataset/img_fixed.list")
+print("Fixed list saved as dataset/img_fixed.list")

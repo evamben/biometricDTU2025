@@ -1,9 +1,6 @@
 import os
 
-# Ruta al directorio donde están las imágenes
 dir_path = 'datasets/Casia-Fasd/test_img/test_img/color/'
-
-# Archivo de salida
 output_file = 'img.list'
 
 with open(output_file, 'w') as f:
@@ -13,4 +10,4 @@ with open(output_file, 'w') as f:
                 full_path = os.path.join(root, file)
                 f.write(full_path + '\n')
 
-print(f'Archivo {output_file} creado con las rutas de las imágenes.')
+print(f'File {output_file} created with the image paths.')

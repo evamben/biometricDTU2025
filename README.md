@@ -1,180 +1,118 @@
-# biometricDTU2025
-¡Perfecto! Si **el trabajo es tuyo** y lo estás presentando como parte de la Task 4.5, entonces el README debe reflejarlo claramente como tu **propio desarrollo e investigación**.
-
-Aquí tienes el **README completo en formato Markdown (`README.md`)**, con todo integrado y presentando el trabajo como **tu implementación original basada en tu paper publicado en BIOSIG 2025**:
-
-
-# 🧪 Exploring Sample Quality for Face Presentation Attack Detection (PAD)
-
-## 📌 Project Overview
-
-This repository presents the official implementation of the work:
-
-> **"The Impact of Sample Quality Stratification on Generalization in Face Presentation Attack Detection"**  
-> *Eva María Benito Sanz, BIOSIG 2025*
-
-This project explores how **sample quality influences the generalization capability** of Face Presentation Attack Detection (PAD) systems. We propose a novel **quality-aware training protocol** that uses a custom quality metric (**QPAD**) and stratifies training data into quality tiers (Low, Medium, High). We show that training deep neural networks on **medium-quality samples** achieves superior generalization to unseen domains and attack types.
-
-
-## 🧠 Motivation
-
-Although recent PAD systems achieve high accuracy in controlled settings, their performance **degrades significantly under domain shift**. A major reason is the **sample quality variation**, which introduces spurious correlations and confounds learning.
-
-This work presents the **first systematic study** of the role of sample quality in PAD generalization, and introduces:
-- A new **PAD-specific quality metric (QPAD)**
-- A robust **quality stratification protocol**
-- Evaluation across quality tiers, datasets, and attacks
-- Integration with **causal learning (CF-PAD)** for enhanced robustness
+Por supuesto, aquí tienes el `README.md` en **inglés**, sin emojis ni símbolos decorativos:
 
 ---
 
-## 🧱 Project Structure
+# Exploring Sample Quality for Face Presentation Attack Detection (PAD)
+
+## Project Overview
+
+This repository contains the official implementation of the paper:
+
+**"The Impact of Sample Quality Stratification on Generalization in Face Presentation Attack Detection"**
+*Eva María Benito Sanz, Biometrics Systems*
+
+We introduce a quality-aware protocol for training Face Presentation Attack Detection (PAD) models, which improves generalization to unseen domains and attacks by leveraging a custom sample quality metric (QPAD) and stratified training.
+
+## Motivation
+
+PAD systems often suffer from poor generalization across domains due to sample quality variation. This project addresses this issue by:
+
+* Defining a new PAD-specific quality metric (QPAD)
+* Stratifying data into Low (LQ), Medium (MQ), and High (HQ) quality tiers
+* Evaluating  cross-dataset.
+* Enhancing performance using causal learning (CF-PAD)
+
+## Repository Structure
+
+```
+BIOMETRICDTU2025/
+├── CF-PAd/                             # Main implementation: training, evaluation, datasets, metrics
+│   ├── checkpoints/                   # Saved model checkpoints
+│   ├── confusion_matrices/           # Confusion matrix plots
+│   ├── datasets/                     # Custom PyTorch dataset loading logic
+│   ├── logs/                         # Training and evaluation logs
+│   ├── metrics/                      # Implementation of evaluation metrics (HTER, AUC, BPCER, etc.)
+│   ├── quality_split_images_casia_train/     # CASIA dataset split into quality tiers (image folders)
+│   ├── quality_splits_LCC_traaining/         # LCC dataset splits into quality tiers (text file lists)
+│   ├── results/                      # Output: result CSVs, misclassified images, tables
+│   ├── count.py                      # Counts samples per quality category
+│   ├── dataset.py                    # Dataset loading logic and preprocessing
+│   ├── eval.py                       # Evaluation pipeline
+│   ├── eval_only_runner.py           # Evaluation runner without training
+│   ├── folder_high_quality_best_model.pth    # Example pre-trained model checkpoint
+│   ├── model.py                      # PAD model (e.g., ResNet-18 based)
+│   ├── script-runner.py              # Main script for cross-domain training and evaluation
+│   ├── train.py                      # Training script
+│   └── utils.py                      # General utility functions
+├── confusion_matrices/               # Global plots and matrix visualizations
+├── img_lists_LCC/                    # List of LCC images by quality
+├── logs/                             # Global logs
+├── Magface_v2/                       # QPAD feature extraction and quality scoring (MagFace-based)
+│   ├── models/                       # MagFace model loading and configs
+│   ├── preprocessing_v1/            # Image preprocessing (normalization, resizing)
+│   ├── quality_split_images copy/         # Temporary or backup CASIA splits
+│   ├── quality_splits_LCC_development/    # Experimental LCC quality splits (development versions)
+│   ├── extract_quality_scores.py          # Main QPAD computation script (generic)
+│   ├── extract_quality_scores_casia.py    # QPAD computation for CASIA
+│   ├── fake.py                       # Likely test/mocking functionality
+│   ├── gen_feat_casia.py             # MagFace feature extraction for CASIA
+│   ├── gen_feat_lcc.py               # MagFace feature extraction for LCC
+│   ├── gen_img_list_lcc.py           # Generate LCC img.list from folder structure
+│   ├── img_lcc_fix.py                # Patch or clean file paths/labels in LCC
+│   ├── network_inf.py                # Model inference wrapper using MagFace
+│   └── utils.py                      # Helpers for quality scoring, feature handling
+├── scripts/                          # Additional or legacy scripts
+├── .gitattributes
+├── .gitignore
+└── README.md                         # Project documentation
 
 ```
 
-.
-├── data/                         # Input datasets (CASIA-FASD, Replay-Attack, OULU-NPU)
-├── quality/
-│   ├── compute\_qpad.py           # QPAD computation (MagFace + artifacts)
-│   ├── stratify\_by\_quality.py    # Quality tier splitting (LQ, MQ, HQ)
-├── models/
-│   ├── train.py                  # Model training per quality tier
-│   ├── evaluate.py               # Evaluation across quality tiers/domains
-├── utils/
-│   ├── metrics.py                # HTER, AUC, BPCER computation
-│   ├── visualizations.py         # t-SNE plots
-├── results/                      # Logs, figures, and evaluation tables
-├── configs/
-│   └── config.yaml               # Training configuration
-├── requirements.txt
-└── README.md
+## Getting Started
 
-````
+### 1. Do some preprocessing and generate img.list wit scripts.
 
----
-
-## 📊 Methodology
-
-### 📌 1. Quality Metric – **QPAD**
-
-We extend MagFace by integrating sensitivity to spoof-relevant image artifacts:
-
-\[
-Q_{PAD}(I) = \|f(I)\| \cdot \prod_{k=1}^K (1 - \alpha_k A_k(I))
-\]
-
-Where:
-- \(\|f(I)\|\) is the **MagFace** embedding norm.
-- \(A_k(I)\): normalized scores for artifacts:
-  - \(A_b(I)\): blur (Laplacian variance)
-  - \(A_n(I)\): noise (PCA residual)
-  - \(A_c(I)\): JPEG compression artifacts
-
-Alpha weights \(\alpha_k\) are optimized to maximize correlation with performance drop (HTER increase).
-
----
-
-### 📌 2. Quality Stratification
-
-Datasets are stratified into quality tiers:
-- **Low Quality (LQ):** \( Q < Q_{25} \)
-- **Medium Quality (MQ):** \( Q_{25} \leq Q \leq Q_{75} \)
-- **High Quality (HQ):** \( Q > Q_{75} \)
-
-This allows training and testing PAD models within and across these tiers.
-
----
-
-### 📌 3. Training and Evaluation
-
-We use a ResNet-18 based PAD architecture inspired by DeepPixBis, with pixel-wise and binary supervision. Training uses **tier-specific augmentations**:
-
-| Quality Tier | Augmentation                          |
-|--------------|----------------------------------------|
-| LQ           | Blur (σ=3), JPEG(30%), Noise(σ=0.1)    |
-| MQ           | Random crop, flip                      |
-| HQ           | Center crop only                       |
-
-**Evaluation modes:**
-- Intra-quality (e.g., MQ → MQ)
-- Cross-quality (e.g., MQ → HQ)
-- Cross-dataset (e.g., CASIA → Replay)
-- Cross-attack (test on unseen attack types)
-
-Metrics:
-- **HTER**, **AUC**, **BPCER@APCER=10%**
-
----
-
-## ✅ Results Summary
-
-**Cross-dataset generalization performance (HTER %):**
-
-| Training Tier | LQ Test | MQ Test | HQ Test | Cross-Dataset |
-|---------------|---------|---------|---------|----------------|
-| Low Quality   | 12.4    | 18.7    | 25.3    | 24.6           |
-| Medium Quality| 15.2    | **8.3** | 10.7    | **13.9**       |
-| High Quality  | 28.5    | 14.2    | **6.1** | 21.8           |
-| Mixed Quality | 16.3    | 12.5    | 11.8    | 17.2           |
-
-**Integration with CF-PAD:**
-
-| Method                | HTER (%) |
-|-----------------------|----------|
-| CF-PAD (baseline)     | 17.3     |
-| CF-PAD + MQ training  | **11.2** |
-
----
-
-## ▶️ Getting Started
-
-### 1. Install dependencies
-```bash
-pip install -r requirements.txt
-````
-
-### 2. Compute QPAD scores
+### 2.1 Generation of embeddings casia
 
 ```bash
-python quality/compute_qpad.py --input data/Replay-Attack
+python Magface_v2/gen_feat_casia.py
+```
+### 2.2 Generation of embeddings lcc
+
+```bash
+python Magface_v2/gen_feat_lcc.py
 ```
 
-### 3. Stratify dataset
+### 3.1 Stratify dataset Casia
 
 ```bash
-python quality/stratify_by_quality.py --input data/Replay-Attack --output data/Replay-Stratified
+python Magface_v2\extract_quality_scores_casia.py
 ```
-
-### 4. Train a model
+### 3.2 Stratify dataset LCC
 
 ```bash
-python models/train.py --dataset CASIA-FASD --quality MQ
+python Magface_v2\extract_quality_scores.py
 ```
 
-### 5. Evaluate
+### 4. Train and evaluate models in both directions
 
 ```bash
-python models/evaluate.py --train_dataset CASIA-FASD --test_dataset OULU-NPU --train_quality MQ
+python CF-PAd/script-runner.py --direction both
 ```
 
----
+### 5. Evaluate models in both directions
 
-## 📚 References
+```bash
+python CF-PAd/script-runner.py --direction both
 
-* Eva María Benito Sanz. *The Impact of Sample Quality Stratification on Generalization in Face Presentation Attack Detection*, BIOSIG 2025.
-* Q. Meng et al., *MagFace: A Universal Representation for Face Recognition and Quality Assessment*, CVPR 2021. [GitHub](https://github.com/IrvingMeng/MagFace)
-* M. Fang, N. Damer, *CF-PAD: Causal Feature Learning for Generalized Face PAD*, WACV 2023. [GitHub](https://github.com/meilfang/CF-PAD)
+```
 
----
+## Author
 
-## ✍️ Author
-
-**Eva María Benito Sanz**
-MSc Computer Science and Engineering – DTU
+Eva María Benito Sanz
+MSc Computer Science and Engineering – Technical University of Denmark (DTU)
 [s243313@dtu.dk](mailto:s243313@dtu.dk)
 
----
+## Acknowledgements
 
-## 📌 Acknowledgements
-
-This work was submitted and accepted at BIOSIG 2025 as part of ongoing research into robust and deployable biometric security systems.
+This work is part of my Project for Biometrics Systems Course in DTU. It represents original research on improving generalization in biometric PAD systems through sample quality stratification and causal modeling.
