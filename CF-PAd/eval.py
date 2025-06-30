@@ -1,192 +1,25 @@
-# import argparse
-# import os
-# import shutil
-# import torch
-# import torch.nn as nn
-# from torchvision import transforms, models
-# from torch.utils.data import DataLoader, Dataset
-# from PIL import Image
-# from model import ComplexModel
-# from tqdm import tqdm
-
-# from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, precision_recall_curve
-# import numpy as np
-# import seaborn as sns
-# import matplotlib.pyplot as plt
-
-
-# class CasiaFasdDataset(Dataset):
-#     def __init__(self, img_dir, transform=None):
-#         self.img_paths = []
-#         self.labels = []
-#         self.transform = transform
-
-#         for fname in os.listdir(img_dir):
-#             if not fname.endswith('.jpg'):
-#                 continue
-#             label = 1 if 'real' in fname.lower() else 0
-#             self.img_paths.append(os.path.join(img_dir, fname))
-#             self.labels.append(label)
-
-#     def __len__(self):
-#         return len(self.img_paths)
-
-#     def __getitem__(self, idx):
-#         img_path = self.img_paths[idx]
-#         image = Image.open(img_path).convert("RGB")
-#         label = self.labels[idx]
-
-#         if self.transform:
-#             image = self.transform(image)
-
-#         return image, label
-
-
-# def parse_args():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--data_dir', type=str, required=True, help="Path to evaluation images")
-#     parser.add_argument('--model_path', type=str, required=True, help="Path to the .pth model checkpoint")
-#     parser.add_argument('--batch_size', type=int, default=32)
-#     parser.add_argument('--num_classes', type=int, default=2)
-#     parser.add_argument('--ms_layers', type=str, default="layer1,layer2", help="Comma-separated MixStyle layers")
-#     parser.add_argument('--confusion_matrix_path', type=str, default="confusion_matrix.png", help="Path to save confusion matrix image")
-#     return parser.parse_args()
-
-
-# def plot_confusion_matrix(cm, classes, save_path):
-#     plt.figure(figsize=(6,6))
-#     sns.heatmap(cm, annot=True, fmt="d", cmap='Blues', xticklabels=classes, yticklabels=classes)
-#     plt.ylabel('True label')
-#     plt.xlabel('Predicted label')
-#     plt.title('Confusion Matrix')
-#     plt.savefig(save_path)
-#     plt.close()
-#     print(f"📊 Confusion matrix saved to {save_path}")
-
-
-# def evaluate(data_dir, model_path, batch_size, num_classes, ms_layers, confusion_matrix_path):
-#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-#     transform = transforms.Compose([
-#         transforms.Resize((224, 224)),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-#     ])
-
-#     dataset = CasiaFasdDataset(img_dir=data_dir, transform=transform)
-#     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
-
-#     base_model = models.resnet18(pretrained=False)
-#     model = ComplexModel(base_model=base_model, num_classes=num_classes, ms_layers=ms_layers.split(','))
-
-#     model = model.to(device)  # sin DataParallel para evitar problemas al cargar checkpoint
-
-#     # Carga el checkpoint directamente en el modelo sin DataParallel
-#     state_dict = torch.load(model_path, map_location=device)
-#     model.load_state_dict(state_dict)
-
-#     model.eval()
-
-#     all_labels = []
-#     all_preds = []
-#     all_probs = []
-
-#     with torch.no_grad():
-#         for images, labels in tqdm(dataloader, desc="Evaluating"):
-#             images, labels = images.to(device), labels.to(device)
-#             outputs = model(images, labels=labels, cf_ops=None)
-#             if isinstance(outputs, tuple):
-#                 outputs = outputs[0]
-#             probs = torch.softmax(outputs, dim=1)  # probabilidades para ROC/PR
-#             preds = torch.argmax(probs, dim=1)
-
-#             all_labels.extend(labels.cpu().numpy())
-#             all_preds.extend(preds.cpu().numpy())
-#             all_probs.extend(probs[:, 1].cpu().numpy())  # prob de clase 'Real'
-
-#     acc = np.mean(np.array(all_preds) == np.array(all_labels))
-#     print(f"✅ Evaluation Accuracy: {acc:.4f}")
-
-#     target_names = ['Attack', 'Real']
-#     report = classification_report(all_labels, all_preds, target_names=target_names)
-#     print("\nClassification Report:\n", report)
-
-#     # Confusion matrix
-#     cm = confusion_matrix(all_labels, all_preds)
-#     plot_confusion_matrix(cm, classes=target_names, save_path=confusion_matrix_path)
-
-#     # ROC curve y AUC
-#     fpr, tpr, _ = roc_curve(all_labels, all_probs)
-#     roc_auc = auc(fpr, tpr)
-
-#     plt.figure()
-#     plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
-#     plt.plot([0,1], [0,1], color='navy', lw=2, linestyle='--')
-#     plt.xlim([0,1])
-#     plt.ylim([0,1.05])
-#     plt.xlabel('False Positive Rate')
-#     plt.ylabel('True Positive Rate')
-#     plt.title('Receiver Operating Characteristic')
-#     plt.legend(loc='lower right')
-#     plt.savefig('roc_curve.png')
-#     plt.close()
-#     print("📈 ROC curve saved as roc_curve.png")
-
-#     # Precision-Recall curve
-#     precision, recall, _ = precision_recall_curve(all_labels, all_probs)
-#     plt.figure()
-#     plt.plot(recall, precision, color='b', lw=2)
-#     plt.xlabel('Recall')
-#     plt.ylabel('Precision')
-#     plt.title('Precision-Recall Curve')
-#     plt.savefig('precision_recall_curve.png')
-#     plt.close()
-#     print("📈 Precision-Recall curve saved as precision_recall_curve.png")
-
-#     # Guardar imágenes mal clasificadas para inspección
-#     misclassified_dir = 'misclassified_samples'
-#     os.makedirs(misclassified_dir, exist_ok=True)
-#     for idx, (img_path, true_label, pred_label) in enumerate(zip(dataset.img_paths, all_labels, all_preds)):
-#         if true_label != pred_label:
-#             dest_path = os.path.join(misclassified_dir, f"{idx}_true{true_label}_pred{pred_label}.jpg")
-#             shutil.copy(img_path, dest_path)
-#     print(f"🖼️ Saved misclassified images in {misclassified_dir}")
-
-
-# if __name__ == "__main__":
-#     args = parse_args()
-#     evaluate(
-#         data_dir=args.data_dir,
-#         model_path=args.model_path,
-#         batch_size=args.batch_size,
-#         num_classes=args.num_classes,
-#         ms_layers=args.ms_layers,
-#         confusion_matrix_path=args.confusion_matrix_path
-#     )
 import argparse
 import os
-import shutil
+import hashlib
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from torchvision import models
 from torch.utils.data import DataLoader, Dataset
 from PIL import Image
 from model import SimpleModel
 from tqdm import tqdm
-
-from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc, precision_recall_curve
+import pandas as pd
 import numpy as np
-import seaborn as sns
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 
 class CasiaFasdDataset(Dataset):
     def __init__(self, img_dir, transform=None):
         self.img_paths = []
         self.labels = []
         self.transform = transform
-
         for root, _, files in os.walk(img_dir):
             for fname in files:
                 if not fname.lower().endswith(('.jpg', '.png', '.jpeg')):
@@ -199,49 +32,112 @@ class CasiaFasdDataset(Dataset):
                     continue
                 self.img_paths.append(os.path.join(root, fname))
                 self.labels.append(label)
-
-        print(f"Found {len(self.img_paths)} images in {img_dir}")
         if len(self.img_paths) == 0:
-            raise ValueError(f"No valid images found in {img_dir}")
+            raise ValueError(f"No valid images in {img_dir}")
+        print(f"[CASIA] {len(self.img_paths)} images loaded.")
 
     def __len__(self):
         return len(self.img_paths)
 
     def __getitem__(self, idx):
-        img_path = self.img_paths[idx]
+        path = self.img_paths[idx]
         try:
-            image = Image.open(img_path).convert("RGB")
+            image = Image.open(path).convert("RGB")
             label = self.labels[idx]
             if self.transform:
                 image = self.transform(image)
-            return image, label
-        except Exception as e:
-            print(f"Error loading image {img_path}: {e}")
-            return self.__getitem__(torch.randint(0, len(self), (1,)).item())
+            return image, label, path
+        except Exception:
+            return self.__getitem__((idx + 1) % len(self))
 
+class FolderDataset(Dataset):
+    def __init__(self, root_dir, transform=None):
+        self.img_paths = []
+        self.labels = []
+        self.transform = transform
+        self.label_map = {'real': 1, 'spoof': 0}
+        for label_name in os.listdir(root_dir):
+            label_dir = os.path.join(root_dir, label_name)
+            if not os.path.isdir(label_dir):
+                continue
+            label = self.label_map.get(label_name.lower())
+            if label is None:
+                continue
+            for fname in os.listdir(label_dir):
+                if not fname.lower().endswith(('.jpg', '.png', '.jpeg')):
+                    continue
+                self.img_paths.append(os.path.join(label_dir, fname))
+                self.labels.append(label)
+        if len(self.img_paths) == 0:
+            raise ValueError(f"No valid images in {root_dir}")
+        print(f"[FOLDER] {len(self.img_paths)} images loaded.")
+
+    def __len__(self):
+        return len(self.img_paths)
+
+    def __getitem__(self, idx):
+        path = self.img_paths[idx]
+        try:
+            image = Image.open(path).convert("RGB")
+            label = self.labels[idx]
+            if self.transform:
+                image = self.transform(image)
+            return image, label, path
+        except Exception:
+            return self.__getitem__((idx + 1) % len(self))
+
+class TextFileDataset(Dataset):
+    def __init__(self, txt_file, transform=None):
+        self.img_paths = []
+        self.labels = []
+        self.transform = transform
+        with open(txt_file, 'r') as f:
+            lines = f.readlines()
+        for path in lines:
+            path = path.strip()
+            if not os.path.isfile(path):
+                continue
+            if 'real' in path.lower():
+                label = 1
+            elif 'fake' in path.lower() or 'spoof' in path.lower():
+                label = 0
+            else:
+                continue
+            self.img_paths.append(path)
+            self.labels.append(label)
+        if len(self.img_paths) == 0:
+            raise ValueError(f"No valid images in {txt_file}")
+        print(f"[TEXT] {len(self.img_paths)} images loaded.")
+
+    def __len__(self):
+        return len(self.img_paths)
+
+    def __getitem__(self, idx):
+        path = self.img_paths[idx]
+        try:
+            image = Image.open(path).convert("RGB")
+            label = self.labels[idx]
+            if self.transform:
+                image = self.transform(image)
+            return image, label, path
+        except Exception:
+            return self.__getitem__((idx + 1) % len(self))
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Model Evaluation Script')
-    parser.add_argument('--data_dir', type=str, required=True, help="Path to evaluation images")
-    parser.add_argument('--model_path', type=str, required=True, help="Path to the .pth model checkpoint")
+    parser = argparse.ArgumentParser(description='Model Evaluation')
+    parser.add_argument('--model_path', type=str, required=True)
+    parser.add_argument('--data', type=str, required=True)
+    parser.add_argument('--dataset_type', choices=['casia', 'folder', 'text'], required=True)
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--dataset_type', type=str, default='casia', choices=['casia', 'folder'])
-    parser.add_argument('--confusion_matrix_path', type=str, default="confusion_matrix.png")
+    parser.add_argument('--save_csv', type=str, default=None)
+    parser.add_argument('--save_misclassified', type=str, default=None)
     return parser.parse_args()
 
+def sanitize_filename(s):
+    return hashlib.md5(s.encode()).hexdigest()
 
-def plot_confusion_matrix(cm, classes, save_path):
-    plt.figure(figsize=(6, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap='Blues', xticklabels=classes, yticklabels=classes)
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.title('Confusion Matrix')
-    plt.savefig(save_path)
-    plt.close()
-    print(f"📊 Confusion matrix saved to {save_path}")
-
-
-def evaluate(args):
+def main():
+    args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     transform = transforms.Compose([
@@ -253,82 +149,100 @@ def evaluate(args):
     ])
 
     if args.dataset_type == 'casia':
-        dataset = CasiaFasdDataset(img_dir=args.data_dir, transform=transform)
+        dataset = CasiaFasdDataset(args.data, transform=transform)
+    elif args.dataset_type == 'folder':
+        dataset = FolderDataset(args.data, transform=transform)
+    elif args.dataset_type == 'text':
+        dataset = TextFileDataset(args.data, transform=transform)
     else:
-        raise ValueError(f"Unsupported dataset type: {args.dataset_type}")
+        raise ValueError("Unsupported dataset type")
 
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+
+    try:
+        checkpoint = torch.load(args.model_path, map_location=device)
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return
 
     model = SimpleModel(num_classes=2)
-    model = model.to(device)  # ❗️No usamos DataParallel
-
-    # Carga del checkpoint sin DataParallel
-    checkpoint = torch.load(args.model_path, map_location=device)
-    model.load_state_dict(checkpoint['model_state_dict'])  # ❗️Sin prefijo 'module.'
-
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model = model.to(device)
     model.eval()
 
-    all_labels = []
-    all_preds = []
-    all_probs = []
+    y_true, y_pred, paths = [], [], []
 
     with torch.no_grad():
-        for images, labels in tqdm(dataloader, desc="Evaluating"):
-            images, labels = images.to(device), labels.to(device)
+        for images, labels, img_paths in tqdm(loader, desc="Evaluating"):
+            images = images.to(device)
+            labels = labels.to(device)
             outputs = model(images)
-            probs = torch.softmax(outputs, dim=1)
-            preds = torch.argmax(probs, dim=1)
+            preds = torch.argmax(outputs, dim=1)
 
-            all_labels.extend(labels.cpu().numpy())
-            all_preds.extend(preds.cpu().numpy())
-            all_probs.extend(probs[:, 1].cpu().numpy())  # probabilidad de clase 'real'
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+            paths.extend(img_paths)
 
-    acc = np.mean(np.array(all_preds) == np.array(all_labels))
-    print(f"✅ Accuracy: {acc:.4f}")
+            if args.save_misclassified:
+                os.makedirs(args.save_misclassified, exist_ok=True)
+                for i in range(len(labels)):
+                    if preds[i] != labels[i]:
+                        img = transforms.ToPILImage()(images[i].cpu())
+                        fname = os.path.basename(img_paths[i])
+                        img.save(os.path.join(args.save_misclassified, f"wrong_{fname}"))
 
-    target_names = ['Fake', 'Real']
-    report = classification_report(all_labels, all_preds, target_names=target_names)
-    print("\nClassification Report:\n", report)
+    print("\nClassification Report:")
+    print(classification_report(y_true, y_pred, target_names=["spoof", "real"]))
+    print("Label distribution:", pd.Series(y_true).value_counts().sort_index().to_dict())
 
-    # Matriz de confusión
-    cm = confusion_matrix(all_labels, all_preds)
-    plot_confusion_matrix(cm, target_names, args.confusion_matrix_path)
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["spoof", "real"])
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.tight_layout()
 
-    # ROC Curve
-    fpr, tpr, _ = roc_curve(all_labels, all_probs)
-    roc_auc = auc(fpr, tpr)
-
-    plt.figure()
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve')
-    plt.legend(loc='lower right')
-    plt.savefig('roc_curve.png')
+    os.makedirs("confusion_matrices", exist_ok=True)
+    unique_tag = sanitize_filename(f"{args.model_path}_{args.data}")
+    cm_filename = os.path.join("confusion_matrices", f"confusion_{unique_tag}.png")
+    plt.savefig(cm_filename)
     plt.close()
-    print("📈 ROC curve saved as roc_curve.png")
+    print(f"Confusion matrix saved to {cm_filename}")
 
-    # PR Curve
-    precision, recall, _ = precision_recall_curve(all_labels, all_probs)
-    plt.figure()
-    plt.plot(recall, precision, color='blue', lw=2)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve')
-    plt.savefig('precision_recall_curve.png')
-    plt.close()
-    print("📈 Precision-Recall curve saved as precision_recall_curve.png")
+    os.makedirs("results", exist_ok=True)
+    if args.save_csv:
+        csv_path = args.save_csv
+    else:
+        csv_path = os.path.join("results", f"predictions_{unique_tag}.csv")
 
-    # Guardar imágenes mal clasificadas
-    os.makedirs('misclassified_samples', exist_ok=True)
-    for idx, (img_path, true_label, pred_label) in enumerate(zip(dataset.img_paths, all_labels, all_preds)):
-        if true_label != pred_label:
-            dest_path = os.path.join('misclassified_samples', f"{idx}_true{true_label}_pred{pred_label}.jpg")
-            shutil.copy(img_path, dest_path)
-    print("🖼️ Misclassified images saved in misclassified_samples/")
+    pd.DataFrame({
+        "path": paths,
+        "true": y_true,
+        "pred": y_pred
+    }).to_csv(csv_path, index=False)
+    print(f"Predictions saved to {csv_path}")
 
+    if cm.shape == (2, 2):
+        tn, fp, fn, tp = cm.ravel()
+        far = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+        frr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+        hter = (far + frr) / 2
+
+        print(f"\nFalse Acceptance Rate (FAR): {far:.4f}")
+        print(f"False Rejection Rate (FRR): {frr:.4f}")
+        print(f"Half Total Error Rate (HTER): {hter:.4f}")
+
+        os.makedirs("metrics", exist_ok=True)
+        metrics_filename = os.path.join("metrics", f"metrics_{unique_tag}.csv")
+        pd.DataFrame([{
+            "model_path": args.model_path,
+            "data_path": args.data,
+            "FAR": far,
+            "FRR": frr,
+            "HTER": hter
+        }]).to_csv(metrics_filename, index=False)
+        print(f"Metrics saved to {metrics_filename}")
+    else:
+        print("Confusion matrix is not binary, cannot compute FAR/FRR/HTER.")
 
 if __name__ == "__main__":
-    args = parse_args()
-    evaluate(args)
+    main()
