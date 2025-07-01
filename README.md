@@ -10,6 +10,8 @@ This repository contains the official implementation of the paper:
 
 We introduce a quality-aware protocol for training Face Presentation Attack Detection (PAD) models, which improves generalization to unseen domains and attacks by leveraging a custom sample quality metric (QPAD) and stratified training.
 
+FOR THE FULL CODE AND DATASETS YOU HAVE THE COMPLETE INFORMATION HERE 
+[folder](https://dtudk-my.sharepoint.com/:f:/g/personal/s243313_dtu_dk/EhRy3Hm2089KvtIUXsxxUEgBfKabGo8n6n0I4tUAftAsWQ?e=OfMaV0)
 ## Motivation
 
 PAD systems often suffer from poor generalization across domains due to sample quality variation. This project addresses this issue by:
